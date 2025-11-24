@@ -191,7 +191,9 @@
                                         </tr>
                                         <tr>
                                             <td><strong>Status:</strong></td>
-                                            <td><status-badge :status="selectedTracking.status"></status-badge></td>
+                                            <td><span class="badge status-badge"
+                                                    :class="getStatusBadgeClass(selectedTracking.status)">{{
+                                                    selectedTracking.status }}</span></td>
                                         </tr>
                                     </table>
                                 </div>
@@ -301,7 +303,10 @@
                                             <td class="text-success fw-bold">Rp {{
                                                 tracking.total.toLocaleString('id-ID') }}</td>
                                             <td class="text-center">
-                                                <status-badge :status="tracking.status"></status-badge>
+                                                <span class="badge status-badge"
+                                                    :class="getStatusBadgeClass(tracking.status)">
+                                                    {{ tracking.status }}
+                                                </span>
                                             </td>
                                             <td>
                                                 <button type="button" class="btn btn-sm btn-outline-primary"
@@ -320,28 +325,128 @@
             </div>
         </div>
 
-        <!-- Modal Tambah DO menggunakan app-modal dan order-form components -->
-        <app-modal
-            ref="doModal"
-            modal-id="addDOModal"
-            title="Tambah Delivery Order Baru"
-            icon="bi bi-plus-circle"
-            size="lg"
-            :centered="true"
-            header-variant="primary"
-            confirm-text="Simpan DO"
-            cancel-text="Batal"
-            @confirm="saveDO"
-            @cancel="handleModalCancel">
-            
-            <!-- Order Form Component -->
-            <order-form
-                :form-data="formData"
-                :paket-list="paketList"
-                :stok-list="stokList"
-                @submit="handleOrderFormSubmit">
-            </order-form>
-        </app-modal>
+        <!-- Modal Tambah DO 
+            berisi form input untuk menambah Delivery Order baru
+        -->
+        <div class="modal fade" id="addDOModal" tabindex="-1" aria-labelledby="addDOModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title" id="addDOModalLabel">
+                            <i class="bi bi-plus-circle me-2"></i>Tambah Delivery Order Baru
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Alert di dalam form untuk error/warning -->
+                        <div v-if="formAlert.show" class="alert" :class="formAlert.type" role="alert">
+                            <div class="d-flex align-items-center">
+                                <i :class="formAlert.icon" class="me-2"></i>
+                                <div>
+                                    <strong>{{ formAlert.title }}</strong>
+                                    <div class="mt-1">{{ formAlert.message }}</div>
+                                </div>
+                                <button type="button" class="btn-close ms-auto" @click="hideFormAlert"></button>
+                            </div>
+                        </div>
+
+                        <form @submit.prevent="saveDO">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <!-- Input untuk Nomor DO, bersifat readonly karena tergenerate secara otomatis -->
+                                    <label class="form-label">Nomor DO</label>
+                                    <input type="text" class="form-control" v-model="formData.nomorDO" readonly>
+                                    <small class="text-muted">Tergenerate otomatis</small>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <!-- Input untuk NIM -->
+                                    <label class="form-label">NIM</label>
+                                    <input type="text" class="form-control" v-model.trim="formData.nim"
+                                        placeholder="Masukkan NIM" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <!-- Input untuk Nama Lengkap -->
+                                    <label class="form-label">Nama Lengkap</label>
+                                    <input type="text" class="form-control" v-model.trim="formData.nama"
+                                        placeholder="Masukkan nama lengkap" required>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <!-- Input untuk Ekspedisi -->
+                                    <label class="form-label">Ekspedisi</label>
+                                    <select class="form-select" v-model="formData.ekspedisi" required>
+                                        <option value="">Pilih Ekspedisi</option>
+                                        <option value="JNE Regular">JNE Regular</option>
+                                        <option value="JNE Express">JNE Express</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Tanggal Kirim</label>
+                                    <input type="date" class="form-control" v-model="formData.tanggalKirim" required>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-12 mb-3">
+                                    <!-- Input untuk Paket Bahan Ajar -->
+                                    <label class="form-label">Paket Bahan Ajar</label>
+                                    <select class="form-select" v-model="formData.paketKode" @change="onPaketChange"
+                                        required>
+                                        <option value="">Pilih Paket</option>
+                                        <option v-for="paket in paketList" :key="paket.kode" :value="paket.kode">
+                                            {{ paket.kode }} - {{ paket.nama }}
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Detail Isi Paket -->
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <div class="alert alert-info">
+                                        <h6 class="alert-heading"><i class="bi bi-box-seam me-2"></i>Detail Isi Paket:
+                                        </h6>
+
+                                        <!-- Tampilkan jika paket sudah dipilih -->
+                                        <div v-if="selectedPaket">
+                                            <ul class="mb-2">
+                                                <li v-for="(kode, index) in selectedPaket.isi" :key="index">
+                                                    <strong>{{ kode }}</strong> - {{ getMatkulName(kode) }}
+                                                </li>
+                                            </ul>
+                                            <hr>
+                                            <p class="mb-0">
+                                                <strong>Total Harga:</strong>
+                                                <span class="text-success fw-bold">Rp {{
+                                                    selectedPaket.harga.toLocaleString('id-ID') }}</span>
+                                            </p>
+                                        </div>
+
+                                        <!-- Tampilkan jika paket belum dipilih -->
+                                        <div v-else>
+                                            <p class="mb-1"><strong>Kode:</strong> -</p>
+                                            <p class="mb-0"><strong>Total Harga:</strong> -</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-2"></i>Batal
+                        </button>
+                        <button type="button" class="btn btn-primary" @click="saveDO">
+                            <i class="bi bi-check-circle me-2"></i>Simpan DO
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div> <!-- End of Vue app -->
 
     <!-- JS Bootstrap -->
@@ -350,10 +455,6 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
     <!-- JS Data -->
     <script src="../js/dataBahanAjar.js"></script>
-    <!-- Vue Components (load before standalone app) -->
-    <script src="../js/components/ba-modal.js"></script>
-    <script src="../js/components/ba-status-badge.js"></script>
-    <script src="../js/components/ba-order-form.js"></script>
     <!-- Tracking Standalone App -->
     <script src="../js/components/tracking-app.js"></script>
 </body>

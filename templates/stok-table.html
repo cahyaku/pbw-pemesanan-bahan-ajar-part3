@@ -213,6 +213,10 @@
                                                     @click="editStock(index)" title="Edit">
                                                     <i class="bi bi-pencil"></i>
                                                 </button>
+                                                <button class="btn btn-sm btn-outline-danger"
+                                                    @click="deleteStock(index)" title="Hapus">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -224,122 +228,115 @@
             </div>
         </div>
 
-        <!-- Modal Tambah/Edit Stok, ini pakai bootstrap agar tampilannya seragam-->
-        <div class="modal fade" id="addStockModal" tabindex="-1" aria-labelledby="addStockModalLabel"
-            aria-hidden="true">
-            <div class="modal-dialog modal-lg modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title" id="addStockModalLabel">
-                            <i :class="editMode ? 'bi bi-pencil me-2' : 'bi bi-plus-circle me-2'"></i>
-                            {{ editMode ? 'Edit Stok Bahan Ajar' : 'Tambah Stok Bahan Ajar Baru' }}
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-                            aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <!-- Alert di dalam form untuk error/warning -->
-                        <!-- v-if untuk membuat kondisi misalnya menampilkan atau menyembunyikan elemen -->
-                        <div v-if="formAlert.show" class="alert" :class="formAlert.type" role="alert">
-                            <div class="d-flex align-items-center">
-                                <i :class="formAlert.icon" class="me-2"></i>
-                                <div>
-                                    <strong>{{ formAlert.title }}</strong>
-                                    <div class="mt-1">{{ formAlert.message }}</div>
-                                </div>
-                                <button type="button" class="btn-close ms-auto" @click="hideFormAlert"></button>
-                            </div>
-                        </div>
+        <!-- Modal Tambah/Edit Stok menggunakan app-modal component -->
+        <app-modal ref="stockModal" modal-id="addStockModal"
+            :title="editMode ? 'Edit Stok Bahan Ajar' : 'Tambah Stok Bahan Ajar Baru'"
+            :icon="editMode ? 'bi bi-pencil' : 'bi bi-plus-circle'" size="lg" :centered="true" header-variant="primary"
+            :confirm-text="editMode ? 'Update Stok' : 'Tambah Stok'" cancel-text="Batal" @confirm="saveStock"
+            @cancel="handleModalCancel">
 
-                        <!-- Form untuk menambah atau mengedit stok bahan ajar
-                            dengan berbagai field seperti kode, judul, kategori, UT Daerah,
-                            lokasi rak, jumlah stok, safety stock, harga, dan catatan. 
-                            Disini pakai v-model untuk two-way data binding antara input form
-                            dengan data di Vue instance.
-                        -->
-                        <form @submit.prevent="saveStock">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="kode" class="form-label">Kode Mata Kuliah</label>
-                                    <input type="text" class="form-control" v-model.trim="formData.kode"
-                                        placeholder="Contoh: EKMA4116" required>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="judul" class="form-label">Nama Mata Kuliah</label>
-                                    <input type="text" class="form-control" v-model.trim="formData.judul"
-                                        placeholder="Contoh: Pengantar Manajemen" required>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="kategori" class="form-label">Kategori</label>
-                                    <select class="form-select" v-model="formData.kategori" required>
-                                        <option value="">Pilih Kategori</option>
-                                        <option v-for="kategori in kategoriList" :key="kategori" :value="kategori">
-                                            {{ kategori }}
-                                        </option>
-                                    </select>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="upbjj" class="form-label">UT-Daerah</label>
-                                    <select class="form-select" v-model="formData.upbjj" required>
-                                        <option value="">Pilih UT Daerah</option>
-                                        <option v-for="upbjj in upbjjList" :key="upbjj" :value="upbjj">
-                                            {{ upbjj }}
-                                        </option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-4 mb-3">
-                                    <label for="lokasiRak" class="form-label">Lokasi Rak</label>
-                                    <input type="text" class="form-control" v-model.trim="formData.lokasiRak"
-                                        placeholder="Contoh: R1-A3" required>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="qty" class="form-label">Jumlah Stok</label>
-                                    <input type="number" class="form-control" v-model.number="formData.qty"
-                                        placeholder="0" min="0" required>
-                                </div>
-                                <div class="col-md-4 mb-3">
-                                    <label for="safety" class="form-label">Safety Stock</label>
-                                    <input type="number" class="form-control" v-model.number="formData.safety"
-                                        placeholder="0" min="0" required>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-md-12 mb-3">
-                                    <label for="harga" class="form-label">Harga</label>
-                                    <input type="number" class="form-control" v-model.number="formData.harga"
-                                        placeholder="0" min="0" required>
-                                </div>
-                            </div>
-                            <div class="mb-3">
-                                <label for="catatan" class="form-label">Catatan</label>
-                                <textarea class="form-control" v-model="formData.catatanHTML" rows="2"
-                                    placeholder="Catatan tambahan (opsional)"></textarea>
-                                <small class="text-muted">Anda dapat menggunakan HTML tags seperti &lt;em&gt;,
-                                    &lt;strong&gt;, &lt;u&gt;</small>
-                            </div>
-
-                            <!-- Alert untuk validasi stok -->
-                            <div v-if="stockWarning" class="alert alert-warning" role="alert">
-                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                {{ stockWarning }}
-                            </div>
-                        </form>
+            <!-- Alert di dalam form untuk error/warning -->
+            <div v-if="formAlert.show" class="alert" :class="formAlert.type" role="alert">
+                <div class="d-flex align-items-center">
+                    <i :class="formAlert.icon" class="me-2"></i>
+                    <div>
+                        <strong>{{ formAlert.title }}</strong>
+                        <div class="mt-1">{{ formAlert.message }}</div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="bi bi-x-circle me-2"></i>Batal
-                        </button>
-                        <button type="button" class="btn btn-primary" @click="saveStock">
-                            <i class="bi bi-check-circle me-2"></i>{{ editMode ? 'Update Stok' : 'Tambah Stok' }}
-                        </button>
-                    </div>
+                    <button type="button" class="btn-close ms-auto" @click="hideFormAlert"></button>
                 </div>
             </div>
-        </div>
+
+            <!-- Form untuk menambah atau mengedit stok bahan ajar -->
+            <form @submit.prevent="saveStock">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="kode" class="form-label">Kode Mata Kuliah</label>
+                        <input type="text" class="form-control" v-model.trim="formData.kode" :disabled="editMode"
+                            placeholder="Contoh: EKMA4116" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="judul" class="form-label">Nama Mata Kuliah</label>
+                        <input type="text" class="form-control" v-model.trim="formData.judul"
+                            placeholder="Contoh: Pengantar Manajemen" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="kategori" class="form-label">Kategori</label>
+                        <select class="form-select" v-model="formData.kategori" required>
+                            <option value="">Pilih Kategori</option>
+                            <option v-for="kategori in kategoriList" :key="kategori" :value="kategori">
+                                {{ kategori }}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label for="upbjj" class="form-label">UT-Daerah</label>
+                        <select class="form-select" v-model="formData.upbjj" required>
+                            <option value="">Pilih UT Daerah</option>
+                            <option v-for="upbjj in upbjjList" :key="upbjj" :value="upbjj">
+                                {{ upbjj }}
+                            </option>
+                        </select>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="lokasiRak" class="form-label">Lokasi Rak</label>
+                        <input type="text" class="form-control" v-model.trim="formData.lokasiRak"
+                            placeholder="Contoh: R1-A3" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="qty" class="form-label">Jumlah Stok</label>
+                        <input type="number" class="form-control" v-model.number="formData.qty" placeholder="0" min="0"
+                            required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label for="safety" class="form-label">Safety Stock</label>
+                        <input type="number" class="form-control" v-model.number="formData.safety" placeholder="0"
+                            min="0" required>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-12 mb-3">
+                        <label for="harga" class="form-label">Harga</label>
+                        <input type="number" class="form-control" v-model.number="formData.harga" placeholder="0"
+                            min="0" required>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label for="catatan" class="form-label">Catatan</label>
+                    <textarea class="form-control" v-model="formData.catatanHTML" rows="2"
+                        placeholder="Catatan tambahan (opsional)"></textarea>
+                    <small class="text-muted">Anda dapat menggunakan HTML tags seperti &lt;em&gt;,
+                        &lt;strong&gt;, &lt;u&gt;</small>
+                </div>
+
+                <!-- Alert untuk validasi stok -->
+                <div v-if="stockWarning" class="alert alert-warning" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    {{ stockWarning }}
+                </div>
+            </form>
+        </app-modal>
+
+        <!-- Modal Konfirmasi Hapus -->
+        <app-modal ref="deleteModal" modal-id="deleteStockModal" title="Konfirmasi Hapus Data" icon="bi bi-trash"
+            size="md" :centered="true" header-variant="danger" confirm-text="Hapus" cancel-text="Batal"
+            confirm-variant="danger" @confirm="confirmDelete" @cancel="cancelDelete">
+
+            <div class="text-center py-3">
+                <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 4rem;"></i>
+                <h5 class="mt-3">Apakah Anda yakin ingin menghapus data ini?</h5>
+                <p class="text-muted mb-0" v-if="deleteItem">
+                    <strong>{{ deleteItem.kode }}</strong> - {{ deleteItem.judul }}
+                </p>
+                <p class="text-danger mt-2 mb-0">
+                    <small><i class="bi bi-info-circle me-1"></i>Data yang dihapus tidak dapat dikembalikan!</small>
+                </p>
+            </div>
+        </app-modal>
     </div> <!-- End of Vue app -->
 
     <!-- JS Bootstrap -->
@@ -348,6 +345,9 @@
     <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
     <!-- JS Data -->
     <script src="../js/dataBahanAjar.js"></script>
+    <!-- Vue Components (load before standalone app) -->
+    <script src="../js/components/app-modal.js"></script>
+    <script src="../js/components/status-badge.js"></script>
     <!-- Stok Management Standalone App -->
     <script src="../js/components/stok-app.js"></script>
 </body>

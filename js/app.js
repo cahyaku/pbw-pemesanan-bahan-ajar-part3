@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         this.isAuthenticated = false;
                     }
                 },
-                
+
                 logout() {
                     logout();
                 }
