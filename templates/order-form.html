@@ -1,0 +1,59 @@
+<!-- 
+    order-form.html - Vue Component Template untuk Form Pemesanan/DO
+    
+    Ini adalah template referensi untuk komponen <order-form>
+    Komponen sudah didefinisikan di js/components/order-form.js
+    
+    Contoh penggunaan:
+    
+    <order-form 
+        :form-data="formData"
+        :paket-list="paketList"
+        :stok-list="stokList"
+        @submit="handleSubmit"
+        @update:formData="formData = $event">
+    </order-form>
+    
+    Props:
+    - formData: Object data form (required)
+      {
+          nomorDO: string,
+          nim: string,
+          nama: string,
+          ekspedisi: string,
+          tanggalKirim: string (YYYY-MM-DD),
+          paketKode: string,
+          total: number
+      }
+    
+    - paketList: Array daftar paket (required)
+      [{
+          kode: string,
+          nama: string,
+          isi: [string],  // Array kode mata kuliah
+          harga: number
+      }]
+    
+    - stokList: Array daftar stok mata kuliah (required)
+      [{
+          kode: string,
+          judul: string,
+          ...
+      }]
+    
+    Events:
+    - @submit: Event saat form disubmit (dengan validasi)
+    - @update:formData: Event untuk two-way binding data form
+    
+    Methods (dapat diakses via ref):
+    - validate(): Validasi form, return boolean
+    - showFormAlert(type, title, message): Tampilkan alert dalam form
+    - hideFormAlert(): Sembunyikan alert
+    
+    Features:
+    - Auto-calculate total harga berdasarkan paket yang dipilih
+    - Menampilkan detail isi paket secara dinamis
+    - Validasi input (NIM, tanggal, dll)
+    - Alert untuk error/warning
+    - Two-way data binding dengan v-model
+-->

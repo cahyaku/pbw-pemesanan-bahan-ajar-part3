@@ -1,24 +1,16 @@
 /**
- * Aplikasi Vue.js untuk Tracking Pengiriman
- * Menggunakan Vue 2.x untuk mengelola tracking delivery order
+ * tracking-app.js - Vue App untuk Tracking Pengiriman Page
+ * Standalone Vue application dengan semua logic tracking
  */
 
-// Inisialisasi Vue setelah DOM selesai dimuat
 document.addEventListener('DOMContentLoaded', function () {
     // Periksa apakah pengguna sudah login
     if (!isLoggedIn()) {
-        window.location.href = 'index.html';
+        window.location.href = '../index.html';
         return;
     }
 
-    // Inisialisasi Vue App
-    initializeVueApp();
-});
-
-/**
- * Fungsi untuk menginisialisasi Aplikasi Vue
- */
-function initializeVueApp() {
+    // Inisialisasi Vue App untuk Tracking
     new Vue({
         el: '#app',
         data: {
@@ -50,7 +42,7 @@ function initializeVueApp() {
                 total: 0
             },
 
-            // Paket yang dipilih untuk menampilkan detail
+            // Paket yang dipilih
             selectedPaket: null,
 
             // Instance modal Bootstrap
@@ -66,7 +58,7 @@ function initializeVueApp() {
                 timeout: null
             },
 
-            // Alert form untuk error/warning di dalam modal
+            // Alert form
             formAlert: {
                 show: false,
                 type: '',
@@ -75,14 +67,14 @@ function initializeVueApp() {
                 icon: ''
             },
 
-            // Alert sukses untuk ditampilkan di tengah layar
+            // Alert sukses
             successAlert: {
                 show: false,
                 title: '',
                 message: ''
             },
 
-            // Alert peringatan untuk ditampilkan di tengah layar
+            // Alert peringatan
             warningAlert: {
                 show: false,
                 title: '',
@@ -90,22 +82,18 @@ function initializeVueApp() {
             }
         },
 
-        // Properti terhitung
         computed: {
             /**
-             * Menghasilkan nomor DO otomatis
-             * Format: DO + Tahun + Nomor Urut (4 digit)
+             * Generate nomor DO otomatis
              */
             nextDONumber() {
                 const year = new Date().getFullYear();
                 const existingDOs = Object.keys(this.trackingData);
 
-                // Filter DO dengan tahun yang sama
                 const currentYearDOs = existingDOs.filter(doNum =>
                     doNum.startsWith(`DO${year}-`)
                 );
 
-                // Hitung nomor urut berikutnya
                 let maxSequence = 0;
                 currentYearDOs.forEach(doNum => {
                     const parts = doNum.split('-');
@@ -122,8 +110,7 @@ function initializeVueApp() {
             },
 
             /**
-             * Mengubah objek trackingData menjadi array untuk ditampilkan di tabel
-             * Urutkan berdasarkan nomor DO (terbaru di atas)
+             * Convert trackingData object to array
              */
             trackingList() {
                 const list = Object.keys(this.trackingData).map(doNumber => {
@@ -133,16 +120,14 @@ function initializeVueApp() {
                     };
                 });
 
-                // Urutkan secara menurun (terbaru di atas)
                 return list.sort((a, b) => {
                     return b.nomorDO.localeCompare(a.nomorDO);
                 });
             }
         },
 
-        // Pengamat perubahan data
         watch: {
-            'formData.paketKode'(newValue, oldValue) {
+            'formData.paketKode'(newValue) {
                 if (newValue) {
                     this.updateSelectedPaket();
                 } else {
@@ -152,10 +137,9 @@ function initializeVueApp() {
             }
         },
 
-        // Metode-metode
         methods: {
             /**
-             * Menangani pencarian tracking
+             * Handle pencarian tracking
              */
             handleTracking() {
                 const doNumber = this.searchDO.trim();
@@ -165,31 +149,27 @@ function initializeVueApp() {
                     return;
                 }
 
-                // Validasi format nomor DO
                 if (!/^DO\d{4}-\d{4}$/.test(doNumber)) {
                     this.showAlert('warning', 'Format Salah!', 'Format nomor DO harus: DO2025-0001');
                     return;
                 }
 
-                // Cari dalam data tracking
                 if (this.trackingData[doNumber]) {
                     this.displayTrackingResults(this.trackingData[doNumber]);
-                    // Tidak perlu alert untuk pencarian berhasil, langsung tampilkan hasil
                 } else {
                     this.displayNoResults();
-                    this.showWarningAlert('Data Tidak Ditemukan!', `Nomor DO ${doNumber} tidak ditemukan dalam sistem. Silakan periksa kembali nomor DO yang Anda masukkan.`);
+                    this.showWarningAlert('Data Tidak Ditemukan!', `Nomor DO ${doNumber} tidak ditemukan dalam sistem.`);
                 }
             },
 
             /**
-             * Menampilkan hasil tracking
+             * Tampilkan hasil tracking
              */
             displayTrackingResults(data) {
                 this.selectedTracking = data;
                 this.showResults = true;
                 this.showNoResults = false;
 
-                // Gulir ke hasil
                 this.$nextTick(() => {
                     const element = document.querySelector('.card');
                     if (element) {
@@ -199,7 +179,7 @@ function initializeVueApp() {
             },
 
             /**
-             * Menampilkan pesan tidak ditemukan
+             * Tampilkan no results
              */
             displayNoResults() {
                 this.selectedTracking = null;
@@ -208,27 +188,24 @@ function initializeVueApp() {
             },
 
             /**
-             * Menutup hasil tracking
+             * Close results
              */
             closeResults() {
                 this.showResults = false;
                 this.showNoResults = false;
                 this.selectedTracking = null;
-                this.searchDO = ''; // Reset input pencarian
+                this.searchDO = '';
             },
 
             /**
-             * Tampilkan detail tracking dari tabel
+             * View tracking dari tabel
              */
             viewTracking(nomorDO) {
-                // Atur searchDO dengan nomor DO yang dipilih
                 this.searchDO = nomorDO;
 
-                // Cari dan tampilkan data tracking
                 if (this.trackingData[nomorDO]) {
                     this.displayTrackingResults(this.trackingData[nomorDO]);
 
-                    // Gulir ke hasil tracking
                     this.$nextTick(() => {
                         const element = document.querySelector('.card');
                         if (element) {
@@ -241,7 +218,7 @@ function initializeVueApp() {
             },
 
             /**
-             * Mendapatkan kelas CSS untuk status badge
+             * Get status badge class
              */
             getStatusBadgeClass(status) {
                 if (!status) return 'bg-secondary';
@@ -263,7 +240,7 @@ function initializeVueApp() {
             },
 
             /**
-             * Format tanggal
+             * Format date
              */
             formatDate(dateString) {
                 if (!dateString) return '-';
@@ -276,7 +253,7 @@ function initializeVueApp() {
             },
 
             /**
-             * Format tanggal dan waktu
+             * Format datetime
              */
             formatDateTime(dateTimeString) {
                 if (!dateTimeString) return '-';
@@ -291,8 +268,7 @@ function initializeVueApp() {
             },
 
             /**
-             * Pengembangan fitur: Tampilkan modal tambah DO
-             * Ini yang akan menyiapkan form untuk input DO baru.
+             * Show modal tambah DO
              */
             showAddDOModal() {
                 this.resetFormData();
@@ -303,7 +279,7 @@ function initializeVueApp() {
             },
 
             /**
-             * Memperbarui paket yang dipilih dan harga
+             * Update selected paket
              */
             updateSelectedPaket() {
                 const paket = this.paketList.find(p => p.kode === this.formData.paketKode);
@@ -318,7 +294,7 @@ function initializeVueApp() {
             },
 
             /**
-             * Mendapatkan nama mata kuliah dari kode
+             * Get matkul name
              */
             getMatkulName(kode) {
                 const matkul = this.stokList.find(s => s.kode === kode);
@@ -326,7 +302,7 @@ function initializeVueApp() {
             },
 
             /**
-             * Mendapatkan tanggal saat ini dalam format YYYY-MM-DD
+             * Get current date
              */
             getCurrentDate() {
                 const today = new Date();
@@ -337,24 +313,17 @@ function initializeVueApp() {
             },
 
             /**
-             * Simpan DO baru
-             * Jadi setelah data formnya lengkap,
-             * Vue akan menjalankan method ini untuk menyimpan DO baru.
+             * Save DO
              */
             saveDO() {
                 try {
-                    // Namun pertama" dilakukan validasi form melalui method validateForm.
-                    // Jika valid, maka proses penyimpanan dilanjutkan dan dibuatan object tracking baru.
-                    // Jika validasi gagal, proses penyimpanan dihentikan.
                     if (!this.validateForm()) {
                         return;
                     }
 
-                    // Get paket name
                     const paket = this.paketList.find(p => p.kode === this.formData.paketKode);
                     const paketName = paket ? `${paket.kode} - ${paket.nama}` : this.formData.paketKode;
 
-                    // Buat object tracking baru
                     const newTracking = {
                         nomorDO: this.formData.nomorDO,
                         nim: this.formData.nim,
@@ -372,37 +341,29 @@ function initializeVueApp() {
                         ]
                     };
 
-                    // Tambahkan ke trackingData
                     this.$set(this.trackingData, this.formData.nomorDO, newTracking);
 
-                    // Update dataBahanAjarSource jika ada
                     if (typeof dataBahanAjarSource !== 'undefined' && dataBahanAjarSource.tracking) {
                         dataBahanAjarSource.tracking[this.formData.nomorDO] = newTracking;
                     }
 
-                    // Tutup modal terlebih dahulu
                     this.closeModal();
+                    this.showSuccessAlert('Berhasil!', `Delivery Order ${this.formData.nomorDO} berhasil ditambahkan.`);
 
-                    // Tampilkan success alert di tengah layar
-                    this.showSuccessAlert('Berhasil!', `Delivery Order ${this.formData.nomorDO} berhasil ditambahkan dan siap untuk pengiriman.`);
-
-                    // Auto search untuk menampilkan DO yang baru dibuat (tanpa alert)
                     this.searchDO = newTracking.nomorDO;
-                    // Langsung tampilkan hasil tanpa alert
                     if (this.trackingData[newTracking.nomorDO]) {
                         this.displayTrackingResults(this.trackingData[newTracking.nomorDO]);
                     }
 
                 } catch (error) {
-                    this.showFormAlert('danger', 'Gagal Menyimpan!', 'Terjadi kesalahan saat menyimpan data. Silakan coba lagi.');
+                    this.showFormAlert('danger', 'Gagal Menyimpan!', 'Terjadi kesalahan saat menyimpan data.');
                 }
             },
 
             /**
-             * Validasi form
+             * Validate form
              */
             validateForm() {
-                // Hide form alert sebelum validasi
                 this.hideFormAlert();
 
                 if (!this.formData.nim || !this.formData.nama) {
@@ -425,13 +386,11 @@ function initializeVueApp() {
                     return false;
                 }
 
-                // Validasi format NIM (contoh: harus angka dan minimal 8 digit)
                 if (!/^\d{8,}$/.test(this.formData.nim)) {
                     this.showFormAlert('warning', 'Format Salah!', 'NIM harus berupa angka minimal 8 digit!');
                     return false;
                 }
 
-                // Validasi tanggal tidak boleh masa lalu
                 const selectedDate = new Date(this.formData.tanggalKirim);
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
@@ -445,7 +404,7 @@ function initializeVueApp() {
             },
 
             /**
-             * Reset data form
+             * Reset form data
              */
             resetFormData() {
                 this.formData = {
@@ -462,7 +421,7 @@ function initializeVueApp() {
             },
 
             /**
-             * Buka modal
+             * Open modal
              */
             openModal() {
                 const modalEl = document.getElementById('addDOModal');
@@ -473,26 +432,26 @@ function initializeVueApp() {
             },
 
             /**
-             * Tutup modal
+             * Close modal
              */
             closeModal() {
                 if (this.modalInstance) {
                     this.modalInstance.hide();
                 }
-                this.hideFormAlert(); // Sembunyikan alert form ketika modal ditutup
+                this.hideFormAlert();
                 this.resetFormData();
             },
 
             /**
-             * Keluar dari sistem
+             * Logout
              */
             logout() {
                 sessionStorage.removeItem('currentUser');
-                window.location.href = 'index.html';
+                window.location.href = '../index.html';
             },
 
             /**
-             * Tampilkan pesan alert dengan konfigurasi ikon otomatis
+             * Show alert
              */
             showAlert(type, title, message, duration = 5000) {
                 const iconMap = {
@@ -502,10 +461,8 @@ function initializeVueApp() {
                     info: 'bi bi-info-circle-fill'
                 };
 
-                // Hapus timeout yang ada
                 if (this.alert.timeout) clearTimeout(this.alert.timeout);
 
-                // Atur data alert
                 this.alert = {
                     show: true,
                     type: `alert-${type}`,
@@ -516,9 +473,6 @@ function initializeVueApp() {
                 };
             },
 
-            /**
-             * Sembunyikan pesan alert
-             */
             hideAlert() {
                 this.alert.show = false;
                 if (this.alert.timeout) {
@@ -527,9 +481,6 @@ function initializeVueApp() {
                 }
             },
 
-            /**
-             * Tampilkan alert form (untuk error/warning di dalam modal)
-             */
             showFormAlert(type, title, message) {
                 const iconMap = {
                     danger: 'bi bi-exclamation-triangle-fill',
@@ -545,16 +496,10 @@ function initializeVueApp() {
                 };
             },
 
-            /**
-             * Sembunyikan alert form
-             */
             hideFormAlert() {
                 this.formAlert.show = false;
             },
 
-            /**
-             * Tampilkan/sembunyikan alert sukses (untuk sukses di tengah layar)
-             */
             showSuccessAlert(title, message) {
                 this.successAlert = { show: true, title, message };
             },
@@ -563,9 +508,6 @@ function initializeVueApp() {
                 this.successAlert.show = false;
             },
 
-            /**
-             * Tampilkan/sembunyikan alert peringatan (untuk peringatan di tengah layar)
-             */
             showWarningAlert(title, message) {
                 this.warningAlert = { show: true, title, message };
             },
@@ -575,19 +517,16 @@ function initializeVueApp() {
             },
 
             /**
-             * Muat data dari dataBahanAjar.js
+             * Load data from source
              */
             loadDataFromSource() {
                 if (typeof dataBahanAjarSource !== 'undefined') {
-                    // Muat daftar paket
                     this.paketList = Array.isArray(dataBahanAjarSource.paket) ?
                         [...dataBahanAjarSource.paket] : [];
 
-                    // Muat daftar stok
                     this.stokList = Array.isArray(dataBahanAjarSource.stok) ?
                         [...dataBahanAjarSource.stok] : [];
 
-                    // Muat data tracking (object, bukan array)
                     this.trackingData = dataBahanAjarSource.tracking ?
                         Object.assign({}, dataBahanAjarSource.tracking) : {};
                 } else {
@@ -598,16 +537,23 @@ function initializeVueApp() {
             }
         },
 
-        // Siklus hidup komponen
         mounted() {
-            // Muat data saat komponen di-mount
             this.loadDataFromSource();
 
-            // Muat informasi pengguna
             const user = getCurrentUser();
             if (user) {
                 this.userName = user.nama;
             }
         }
     });
+});
+
+// Utility functions
+function isLoggedIn() {
+    return sessionStorage.getItem('currentUser') !== null;
+}
+
+function getCurrentUser() {
+    const userData = sessionStorage.getItem('currentUser');
+    return userData ? JSON.parse(userData) : null;
 }

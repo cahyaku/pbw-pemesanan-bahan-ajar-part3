@@ -1,0 +1,40 @@
+<!-- 
+    status-badge.html - Vue Component Template untuk Status Badge
+    
+    Ini adalah template referensi untuk komponen <status-badge>
+    Komponen sudah didefinisikan di js/components/status-badge.js
+    
+    Contoh penggunaan:
+    
+    1. Untuk status stok bahan ajar:
+    <status-badge :item="stokItem"></status-badge>
+    
+    Di mana stokItem adalah object dengan properties:
+    {
+        qty: number,      // Jumlah stok
+        safety: number    // Safety stock
+    }
+    
+    Badge akan menampilkan:
+    - "Habis" (merah) jika qty === 0
+    - "Stok Rendah" (kuning) jika qty < safety
+    - "Tersedia" (hijau) jika qty >= safety
+    
+    
+    2. Untuk status tracking/DO:
+    <status-badge status="Dalam Perjalanan"></status-badge>
+    
+    Status yang didukung:
+    - "Diterima" (biru)
+    - "Diproses" (kuning)
+    - "Dalam Perjalanan" (biru)
+    - "Dikirim" (hijau)
+    - "Selesai" (hijau)
+    
+    
+    Props:
+    - item: Object stok dengan qty dan safety (optional)
+    - status: String status untuk tracking (optional)
+    
+    Note: Gunakan salah satu dari item atau status prop
+-->

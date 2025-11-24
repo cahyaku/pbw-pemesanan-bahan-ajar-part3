@@ -1,164 +1,149 @@
 /**
- * Inisiasi halaman saat event DOM selesai dimuat (atau DOMContentLoaded)
+ * index.js - Login Page dengan Vue.js
+ * Menggunakan data dummy dari data.js untuk autentikasi
  */
+
 document.addEventListener('DOMContentLoaded', function () {
-    // Menangani pengiriman form login
-    const loginForm = document.getElementById('loginForm');
-    loginForm.addEventListener('submit', handleLogin);
+    // Inisialisasi Vue App untuk Login
+    new Vue({
+        el: '#app',
+        data: {
+            // Form data dengan v-model
+            email: '',
+            password: '',
+            forgotEmail: '',
+            regNama: '',
+            regEmail: '',
+            regPassword: '',
+            regPasswordConfirm: ''
+        },
+        methods: {
+            /**
+             * Handle login - menggunakan data dari data.js
+             */
+            handleLogin(event) {
+                event.preventDefault();
+
+                const email = this.email.trim();
+                const password = this.password.trim();
+
+                // Validasi input
+                if (!email || !password) {
+                    showInlineAlert('loginForm', 'Harap masukkan email dan password!', 'warning');
+                    return;
+                }
+
+                // Cek kredensial dari dataPengguna (data.js)
+                const user = dataPengguna.find(u => u.email === email && u.password === password);
+
+                if (user) {
+                    // Login berhasil - simpan ke sessionStorage
+                    sessionStorage.setItem('currentUser', JSON.stringify(user));
+
+                    // Reset form
+                    this.email = '';
+                    this.password = '';
+
+                    // Redirect ke dashboard
+                    setTimeout(() => {
+                        window.location.href = 'templates/dashboard.html';
+                    }, 100);
+                } else {
+                    // Login gagal
+                    showCenterAlert('Email/password yang anda masukkan salah', 'danger');
+                }
+            },
+
+            /**
+             * Handle forgot password
+             */
+            handleForgotPassword() {
+                clearInlineAlerts('forgotPasswordModal');
+
+                if (!this.forgotEmail) {
+                    showInlineAlert('forgotPasswordForm', 'Harap masukkan email Anda!', 'warning');
+                    return;
+                }
+
+                const user = dataPengguna.find(u => u.email === this.forgotEmail);
+
+                if (user) {
+                    showCenterAlert('Link reset password telah dikirim ke email Anda.', 'success');
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal'));
+                    if (modal) modal.hide();
+                    this.forgotEmail = '';
+                } else {
+                    showInlineAlert('forgotPasswordForm', 'Email tidak ditemukan dalam sistem.', 'danger');
+                }
+            },
+
+            /**
+             * Handle registration
+             */
+            handleRegister() {
+                clearInlineAlerts('registerModal');
+
+                // Validasi
+                if (!this.regNama || !this.regEmail || !this.regPassword || !this.regPasswordConfirm) {
+                    showInlineAlert('registerForm', 'Harap lengkapi semua field!', 'warning');
+                    return;
+                }
+
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(this.regEmail)) {
+                    showInlineAlert('registerForm', 'Format email tidak valid!', 'warning');
+                    return;
+                }
+
+                if (this.regPassword !== this.regPasswordConfirm) {
+                    showInlineAlert('registerForm', 'Password dan konfirmasi password tidak sama!', 'warning');
+                    return;
+                }
+
+                if (this.regPassword.length < 6) {
+                    showInlineAlert('registerForm', 'Password minimal 6 karakter!', 'warning');
+                    return;
+                }
+
+                const existingUser = dataPengguna.find(u => u.email === this.regEmail);
+                if (existingUser) {
+                    showInlineAlert('registerForm', 'Email sudah terdaftar! Gunakan email lain.', 'danger');
+                    return;
+                }
+
+                // Buat user baru
+                const newUser = {
+                    id: dataPengguna.length + 1,
+                    nama: this.regNama,
+                    email: this.regEmail,
+                    password: this.regPassword,
+                    role: "User",
+                    lokasi: "Default"
+                };
+
+                dataPengguna.push(newUser);
+
+                showCenterAlert('Pendaftaran berhasil! Silakan login dengan akun baru Anda.', 'success');
+
+                const modal = bootstrap.Modal.getInstance(document.getElementById('registerModal'));
+                if (modal) modal.hide();
+
+                // Reset form dan auto-fill login
+                this.email = this.regEmail;
+                this.regNama = '';
+                this.regEmail = '';
+                this.regPassword = '';
+                this.regPasswordConfirm = '';
+            }
+        },
+        mounted() {
+            // Expose methods untuk onclick handlers di HTML
+            window.handleForgotPassword = this.handleForgotPassword;
+            window.handleRegister = this.handleRegister;
+        }
+    });
 });
 
-/**
- * Menangani proses login pengguna
- * @param {Event} event - Event form submission
- */
-function handleLogin(event) {
-    event.preventDefault();
-    event.stopImmediatePropagation();
-
-    const email = document.getElementById('email').value.trim();
-    const password = document.getElementById('password').value.trim();
-
-    // Bersihkan alert sebelumnya
-    clearInlineAlerts();
-
-    // Validasi input
-    if (!email || !password) {
-        showInlineAlert('loginForm', 'Harap masukkan email dan password!', 'warning');
-        return;
-    }
-
-    // Periksa kredensial terhadap data pengguna
-    const user = dataPengguna.find(u => u.email === email && u.password === password);
-
-    if (user) {
-        // Login berhasil
-        // Simpan data pengguna ke session storage
-        sessionStorage.setItem('currentUser', JSON.stringify(user));
-
-        // Cegah perilaku default dan redirect langsung
-        event.preventDefault();
-        event.stopPropagation();
-
-        // Bersihkan data form untuk mencegah popup password manager
-        document.getElementById('email').value = '';
-        document.getElementById('password').value = '';
-
-        // Reset form secara lengkap
-        document.getElementById('loginForm').reset();
-
-        // Gunakan setTimeout untuk memastikan redirect langsung tanpa popup
-        setTimeout(() => {
-            window.location.replace('dashboard.html');
-        }, 50);
-
-    } else {
-        // Login gagal - gunakan center alert untuk visibilitas yang lebih baik
-        showCenterAlert('Email/password yang anda masukkan salah', 'danger');
-    }
-}
-
-/**
- * Menangani fitur lupa password
- * Memvalidasi email dan mengirim link reset password (simulasi)
- */
-function handleForgotPassword() {
-    const email = document.getElementById('forgotEmail').value.trim();
-
-    // Bersihkan alert sebelumnya di modal
-    clearInlineAlerts('forgotPasswordModal');
-
-    if (!email) {
-        showInlineAlert('forgotPasswordForm', 'Harap masukkan email Anda!', 'warning');
-        return;
-    }
-
-    // Periksa apakah email ada di database
-    const user = dataPengguna.find(u => u.email === email);
-
-    if (user) {
-        showCenterAlert('Link reset password telah dikirim ke email Anda.', 'success');
-        // Tutup modal
-        const modal = bootstrap.Modal.getInstance(document.getElementById('forgotPasswordModal'));
-        modal.hide();
-        // Bersihkan form
-        document.getElementById('forgotPasswordForm').reset();
-    } else {
-        showInlineAlert('forgotPasswordForm', 'Email tidak ditemukan dalam sistem.', 'danger');
-    }
-}
-
-/**
- * Menangani proses pendaftaran pengguna baru
- * Validasi form dan menambahkan pengguna baru ke sistem
- */
-function handleRegister() {
-    // Ambil nilai dari form
-    const nama = document.getElementById('regNama').value.trim();
-    const email = document.getElementById('regEmail').value.trim();
-    const password = document.getElementById('regPassword').value.trim();
-    const passwordConfirm = document.getElementById('regPasswordConfirm').value.trim();
-
-    // Bersihkan alert sebelumnya di modal
-    clearInlineAlerts('registerModal');
-
-    // Validasi semua field
-    if (!nama || !email || !password || !passwordConfirm) {
-        showInlineAlert('registerForm', 'Harap lengkapi semua field!', 'warning');
-        return;
-    }
-
-    // Validasi format email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        showInlineAlert('registerForm', 'Format email tidak valid!', 'warning');
-        return;
-    }
-
-    // Validasi kecocokan password
-    if (password !== passwordConfirm) {
-        showInlineAlert('registerForm', 'Password dan konfirmasi password tidak sama!', 'warning');
-        return;
-    }
-
-    // Validasi panjang password
-    if (password.length < 6) {
-        showInlineAlert('registerForm', 'Password minimal 6 karakter!', 'warning');
-        return;
-    }
-
-    // Periksa apakah email sudah terdaftar
-    const existingUser = dataPengguna.find(u => u.email === email);
-    if (existingUser) {
-        showInlineAlert('registerForm', 'Email sudah terdaftar! Gunakan email lain.', 'danger');
-        return;
-    }
-
-    // Membuat objek pengguna baru
-    const newUser = {
-        id: dataPengguna.length + 1,
-        nama: nama,
-        email: email,
-        password: password,
-        role: "User",
-        lokasi: "Default"
-    };
-
-    // Tambahkan pengguna ke data (dalam aplikasi nyata, ini akan dikirim ke server)
-    dataPengguna.push(newUser);
-
-    // Tampilkan pesan sukses dan tutup modal
-    showCenterAlert('Pendaftaran berhasil! Silakan login dengan akun baru Anda.', 'success');
-
-    // Tutup modal langsung
-    const modal = bootstrap.Modal.getInstance(document.getElementById('registerModal'));
-    modal.hide();
-
-    // Bersihkan form
-    document.getElementById('registerForm').reset();
-
-    // Otomatis isi form login dengan email pengguna baru
-    document.getElementById('email').value = email;
-}
 
 /**
  * Menampilkan alert inline dalam form
