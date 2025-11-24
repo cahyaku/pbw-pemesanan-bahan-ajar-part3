@@ -1,49 +1,27 @@
-<!-- 
-    app.modal.html - Vue Component Template untuk Modal Bootstrap
-    
-    Ini adalah template referensi untuk komponen <app-modal>
-    Komponen sudah didefinisikan di js/components/app-modal.js
-    
-    Contoh penggunaan:
-    
-    <app-modal 
-        modal-id="myModal"
-        title="Judul Modal"
-        icon="bi bi-plus-circle"
-        size="lg"
-        :centered="true"
-        header-variant="primary"
-        confirm-text="Simpan"
-        cancel-text="Batal"
-        @confirm="handleConfirm"
-        @cancel="handleCancel">
-        
-        <!-- Konten modal -->
-<p>Isi konten modal di sini</p>
-
-<!-- Custom footer (opsional) -->
-<template v-slot:footer>
-    <button class="btn btn-primary">Custom Button</button>
-</template>
-</app-modal>
-
-Props:
-- modalId: ID unik untuk modal (required)
-- title: Judul modal (required)
-- icon: Ikon Bootstrap untuk header (optional)
-- size: Ukuran modal - sm, md, lg, xl (default: md)
-- centered: Center modal vertically (default: true)
-- headerVariant: Warna header - primary, secondary, success, dll (default: primary)
-- showFooter: Tampilkan footer (default: true)
-- confirmText: Text tombol confirm (default: Simpan)
-- cancelText: Text tombol cancel (default: Batal)
-- confirmVariant: Warna tombol confirm (default: primary)
-
-Events:
-- @confirm: Event saat tombol confirm diklik
-- @cancel: Event saat tombol cancel diklik
-
-Methods (dapat diakses via ref):
-- show(): Menampilkan modal
-- hide(): Menyembunyikan modal
--->
+<div class="modal fade" :id="modalId" tabindex="-1" :aria-labelledby="modalId + 'Label'" aria-hidden="true">
+    <div class="modal-dialog" :class="dialogClass">
+        <div class="modal-content">
+            <div class="modal-header" :class="headerClass">
+                <h5 class="modal-title" :id="modalId + 'Label'">
+                    <i v-if="icon" :class="icon + ' me-2'"></i>
+                    {{ title }}
+                </h5>
+                <button type="button" :class="closeButtonClass" data-bs-dismiss="modal" aria-label="Close">
+                </button>
+            </div>
+            <div class="modal-body">
+                <slot></slot>
+            </div>
+            <div v-if="showFooter" class="modal-footer">
+                <slot name="footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="handleCancel">
+                        <i class="bi bi-x-circle me-2"></i>{{ cancelText }}
+                    </button>
+                    <button type="button" class="btn" :class="confirmButtonClass" @click="handleConfirm">
+                        <i class="bi bi-check-circle me-2"></i>{{ confirmText }}
+                    </button>
+                </slot>
+            </div>
+        </div>
+    </div>
+</div>
