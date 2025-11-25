@@ -1,0 +1,227 @@
+<div class="stock-table-app">
+    <!-- Success Alert Overlay -->
+    <div v-if="successAlert.show" class="success-overlay">
+        <div class="success-modal">
+            <div class="text-center">
+                <div class="success-icon mb-3">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <h3 class="text-success mb-2">{{ successAlert.title }}</h3>
+                <p class="mb-3">{{ successAlert.message }}</p>
+                <button type="button" class="btn btn-success" @click="hideSuccessAlert">
+                    <i class="bi bi-check me-2"></i>OK
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alert Container -->
+    <div class="alert-container">
+        <transition name="fade">
+            <div v-if="alert.show" class="alert" :class="alert.type" role="alert">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <i :class="alert.icon" class="me-2"></i>
+                        <strong>{{ alert.title }}</strong>
+                        <div class="mt-1">{{ alert.message }}</div>
+                    </div>
+                    <button type="button" class="btn-close" @click="hideAlert"></button>
+                </div>
+            </div>
+        </transition>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="row mb-3">
+        <div class="col-md-3 mb-2">
+            <input type="text" class="form-control" v-model="searchQuery"
+                placeholder="Cari kode atau nama mata kuliah...">
+        </div>
+        <div class="col-md-2 mb-2">
+            <select class="form-select" v-model="filterKategori">
+                <option value="">Semua Kategori</option>
+                <option v-for="kat in kategoriList" :key="kat" :value="kat">{{ kat }}</option>
+            </select>
+        </div>
+        <div class="col-md-2 mb-2">
+            <select class="form-select" v-model="filterUpbjj">
+                <option value="">Semua UT-Daerah</option>
+                <option v-for="upbjj in upbjjList" :key="upbjj" :value="upbjj">{{ upbjj }}</option>
+            </select>
+        </div>
+        <div class="col-md-2 mb-2">
+            <select class="form-select" v-model="sortBy">
+                <option value="">Urutkan</option>
+                <option value="judul-asc">Nama A-Z</option>
+                <option value="judul-desc">Nama Z-A</option>
+                <option value="qty-asc">Stok Terendah</option>
+                <option value="qty-desc">Stok Tertinggi</option>
+                <option value="harga-asc">Harga Terendah</option>
+                <option value="harga-desc">Harga Tertinggi</option>
+            </select>
+        </div>
+        <div class="col-md-3 mb-2 text-end">
+            <button class="btn btn-secondary me-2" @click="resetFilters">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>Reset
+            </button>
+            <button class="btn btn-primary" @click="showAddStockModal">
+                <i class="bi bi-plus-circle me-1"></i>Tambah Stok
+            </button>
+        </div>
+    </div>
+
+    <!-- Stock Table -->
+    <div class="card">
+        <div class="card-header bg-gradient text-white">
+            <h5 class="mb-0">
+                <i class="bi bi-table me-2"></i>Daftar Stok Bahan Ajar
+                <span class="badge bg-light text-dark ms-2">{{ filteredStok.length }} items</span>
+            </h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>No</th>
+                            <th>Kode</th>
+                            <th>Nama Mata Kuliah</th>
+                            <th>Kategori</th>
+                            <th>UT-Daerah</th>
+                            <th>Lokasi Rak</th>
+                            <th class="text-end">Harga</th>
+                            <th class="text-center">Stok</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="filteredStok.length === 0">
+                            <td colspan="10" class="text-center py-4">
+                                <i class="bi bi-inbox fs-1 text-muted"></i>
+                                <p class="text-muted mb-0">Tidak ada data stok</p>
+                            </td>
+                        </tr>
+                        <tr v-for="(item, index) in filteredStok" :key="item.kode">
+                            <td>{{ index + 1 }}</td>
+                            <td><strong>{{ item.kode }}</strong></td>
+                            <td>{{ item.judul }}</td>
+                            <td><span class="badge bg-info">{{ item.kategori }}</span></td>
+                            <td>{{ item.upbjj }}</td>
+                            <td><code>{{ item.lokasiRak }}</code></td>
+                            <td class="text-end">{{ formatCurrency(item.harga) }}</td>
+                            <td class="text-center" :class="getStockClass(item.qty)">
+                                <strong>{{ item.qty }}</strong>
+                            </td>
+                            <td class="text-center">
+                                <status-badge :qty="item.qty" :safety="item.safety"></status-badge>
+                            </td>
+                            <td class="text-center">
+                                <button class="btn btn-sm btn-warning me-1" @click="editStock(index)"
+                                    title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button class="btn btn-sm btn-danger" @click="deleteStock(index)"
+                                    title="Hapus">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Add/Edit Stock -->
+    <app-modal ref="stockModal" modal-id="stockModal" 
+        :title="editMode ? 'Edit Stok Bahan Ajar' : 'Tambah Stok Bahan Ajar'"
+        size="lg" @confirm="saveStock" @cancel="handleModalCancel">
+        
+        <!-- Form Alert (inside modal) -->
+        <div v-if="formAlert.show" class="alert" :class="formAlert.type" role="alert">
+            <i :class="formAlert.icon" class="me-2"></i>
+            <strong>{{ formAlert.title }}</strong>
+            <div class="mt-1">{{ formAlert.message }}</div>
+        </div>
+
+        <!-- Form Fields -->
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Kode Mata Kuliah <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" v-model="formData.kode" 
+                    :disabled="editMode" placeholder="Contoh: EKMA4116">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Nama Mata Kuliah <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" v-model="formData.judul" 
+                    placeholder="Nama lengkap mata kuliah">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Kategori <span class="text-danger">*</span></label>
+                <select class="form-select" v-model="formData.kategori">
+                    <option value="">Pilih Kategori</option>
+                    <option v-for="kat in kategoriList" :key="kat" :value="kat">{{ kat }}</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">UT-Daerah <span class="text-danger">*</span></label>
+                <select class="form-select" v-model="formData.upbjj">
+                    <option value="">Pilih UT-Daerah</option>
+                    <option v-for="upbjj in upbjjList" :key="upbjj" :value="upbjj">{{ upbjj }}</option>
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Lokasi Rak <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" v-model="formData.lokasiRak" 
+                    placeholder="Contoh: A1-02">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Harga (Rp) <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" v-model.number="formData.harga" min="0">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Jumlah Stok <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" v-model.number="formData.qty" min="0">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Safety Stock <span class="text-danger">*</span></label>
+                <input type="number" class="form-control" v-model.number="formData.safety" min="0">
+            </div>
+            <div v-if="stockWarning" class="col-12">
+                <div class="alert alert-warning mb-0">
+                    <i class="bi bi-exclamation-triangle me-2"></i>{{ stockWarning }}
+                </div>
+            </div>
+            <div class="col-12">
+                <label class="form-label">Catatan (Opsional)</label>
+                <textarea class="form-control" v-model="formData.catatanHTML" rows="3" 
+                    placeholder="Catatan tambahan..."></textarea>
+            </div>
+        </div>
+    </app-modal>
+
+    <!-- Modal Delete Confirmation -->
+    <app-modal ref="deleteModal" modal-id="deleteModal" 
+        title="Konfirmasi Hapus" 
+        icon="bi-exclamation-triangle-fill text-danger"
+        confirm-text="Hapus" 
+        confirm-class="btn-danger"
+        @confirm="confirmDelete" 
+        @cancel="cancelDelete">
+        
+        <div v-if="deleteItem" class="text-center">
+            <i class="bi bi-exclamation-triangle-fill text-danger fs-1 mb-3"></i>
+            <h5>Yakin ingin menghapus data ini?</h5>
+            <div class="card mt-3">
+                <div class="card-body">
+                    <p class="mb-1"><strong>Kode:</strong> {{ deleteItem.kode }}</p>
+                    <p class="mb-0"><strong>Nama:</strong> {{ deleteItem.judul }}</p>
+                </div>
+            </div>
+            <p class="text-danger mt-3 mb-0">
+                <small><i class="bi bi-info-circle me-1"></i>Data yang dihapus tidak dapat dikembalikan!</small>
+            </p>
+        </div>
+    </app-modal>
+</div>

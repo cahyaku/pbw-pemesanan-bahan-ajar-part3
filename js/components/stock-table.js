@@ -2,11 +2,11 @@
  * stock-table.js - Vue Component untuk Stok Bahan Ajar Management
  * Complete CRUD component dengan filter, sort, dan modal management
  * Custom element: <stock-table>
- * Template: Loaded from /templates/stock-table.html
+ * Template: Loaded from /templates/stok-table-template.html
  */
 
 // Fetch template HTML dari file eksternal
-fetch('../templates/stock-table.html')
+fetch('../templates/stok-table-template.html')
     .then(response => response.text())
     .then(template => {
         // Registrasi komponen <stock-table> ke Vue
@@ -138,6 +138,10 @@ fetch('../templates/stock-table.html')
                     if (qty === 0) return 'text-danger';
                     else if (qty <= 10) return 'text-warning';
                     else return 'text-success';
+                },
+
+                formatCurrency(value) {
+                    return 'Rp ' + value.toLocaleString('id-ID');
                 },
 
                 resetFilters() {
